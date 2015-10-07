@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
+<!-- functionally same as META-INF/context.xml (for Tomcat) -->
+<Configure id="wac" class="org.eclipse.jetty.webapp.WebAppContext">
+	
+</Configure>

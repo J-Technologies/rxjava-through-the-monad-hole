@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Fast and loose websocket client for testing purposes.
+ * TODO use or drop
  */
 public class RecordingWebSocketClient extends WebSocketClient {
 
