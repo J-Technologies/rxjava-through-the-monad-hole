@@ -1,0 +1,140 @@
+Monad X || Y
+ X is basistype
+ Y 'is' de monad
+
+unit:    X -> Y
+flatMap: Y -> (X->Y) -> Y
+
+==
+
+Environment
+ X=T
+ Y=E->T'
+
+unit(t) = e -> t // ken dit toe aan interne lambda 'r'
+flatMap(f) = e -> f(r(e))(e)
+ met f: T,E -> T'
+ask() = e -> e // retrieve current context
+local(f:E->E) = e -> self(f(e)) // executes a computation in a modified subcontext
+
+==
+
+State
+ X=T
+ Y=S->(T',S)  // ook wel S->(S,T')
+
+unit(x) = s -> (x, s)  // produces the given value without changing the state
+flatMap(f) = r -> let (x, s) = m r in (f x) s // modifies m so that it applies f to its result
+get() = s -> (s, s)  // Examine the state at this point in the computation
+put(s) = any -> ((), s)  // Replace the state
+modify(f) = s -> ((), f(s))  // Update the state
+run(s) = t(s) // applies state s
+## runState :: State[a] s -> s -> (a, s)
+
+==
+
+writer
+ X=T
+ Y=(W,T)
+
+class LogWriterMonad<T,L> {
+  private T value;
+  private List<L> logLines;
+
+  public static Writer<T> unit(T value) {
+    return new Writer(value, []);
+  }
+  public static Writer<T> flatMap(Writer<T> writer, Function<T,Writer<T>> f) {
+    Writer<T> result = f(writer.value);
+    return new Writer(result.value, writer.log.concat(result.log));
+  }
+  public static Writer<T> pipeline(List<...> transforms) {
+    Writer<T> result = writer;
+    transforms.stream().foreach(f -> result = result.flatMap(f));
+    return result;
+  }
+}
+
+Function<T,Writer<T>> squared() { x -> new Writer(x * x, 'was squared.')}
+Function<T,Writer<T>> halved() { x -> new Writer(x / 2, 'was halved.')}
+
+pipeline(unit(4), [ squared, halved ]); // [ 8, [ 'was squared.', 'was halved.' ] ]
+
+==
+
+continuation
+ X=T
+ Y=(T'->R)->R
+
+functional expression of the GOTO statement; same caveats apply
+
+f1, k: T->R
+unit(t) = f1 -> f1(t)
+f: T -> (T'->R)->R ??en/of?? (T, T->R) -> R
+flatMap(f) = k -> self(t -> f(t,k))
+?? call-with-current-continuation = call-cc(f) = f(newT, self) where newT = (t, dontCareNewCont) -> self(t)
+
+Java: Lightwolf
+JavaScript Rhino : Continuation
+Ruby: callcc
+Scala: scala.util.continuations provides shift/reset
+Apache Cocoon Web application framework
+
+take a snapshot of the program state S
+modify program state S'
+!! call a function in state S # can be invoked multiple times
+return in S' with function result
+
+uses:
+- compilers
+- exception handling
+- web server that supports multiple pages, accessed by the use of the forward and back buttons and by following links
+
+continuation-passing style (CPS): no function ever returns; all calls are tail calls
+ each function takes an extra "continuation" (1-arg function) argument
+ 'return' a value by calling the continuation function with this value as the argument
+
+CPS with tail call optimization (TCO): no runtime stack req'd!
+
+==
+
+IOMonad
+
+new DB(41).run(io)
+
+class DB(var i: Int) {
+    def run[R](io: IO[R]): R = io(this)
+}
+
+object IO {
+  ...
+  def set(v: Int): IO[Unit] = new IO[Unit] {
+    def apply(db: DB) = db.i = v
+  }
+}
+
+trait IO[R] extends (DB => R) { self =>
+    def flatMap[R2](f: R => IO[R2]): IO[R2] =
+        new IO[R2] {
+            def apply(db: DB) = f(self.apply(db))(db)
+        }
+    def map[R2](f: R => R2): IO[R2] =
+        flatMap[R2](r => IO(f(r)))
+}
+
+// refactor to hide mutable state
+trait IO[R] .. {
+    def flatMap[R2](f: R => IO[R2]): IO[R2] =
+        new FlatMapIO[R2](f)
+}
+
+class FlatMapIO[R, R2](f: R => IO[R2]) extends IO[R2]
+
+class DB(var i: Int) {
+    def run[R](io: IO[R]): R = io match {
+        case FlatMapIO(f) => ...
+        case ...
+    }
+}
+
+== EOF

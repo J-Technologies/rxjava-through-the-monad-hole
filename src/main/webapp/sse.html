@@ -1,0 +1,44 @@
+<html>
+<head>
+		<script type="text/javascript" src="jquery-2.0.3.min.js"></script>
+<script>
+var source = new EventSource('http://localhost:9999/rest/webapi/events');
+
+source.onmessage = function(e) {
+  console.log("Received SSE event: " + e.data + " from " + e.origin);
+  $("#sse-msgs").prepend(e.data + "<br/>");
+};
+
+source.onopen = function(e) {
+	  console.log("SSE Connection opened");  
+};
+
+source.addEventListener('error', function(e) {
+  if (e.readyState == EventSource.CLOSED || e.eventPhase == EventSource.CLOSED) {
+	  console.log("SSE Connection closed from server side - browser will reopen it automagically");  
+  } else {
+	  console.log("SSE error: " + e);  
+  }
+}, false);
+
+source.addEventListener('text-version', function(e) {
+	  console.log("Received custom SSE event: " + e.data);
+	  $("#sse-msgs").prepend('text-version: ' + e.data + "<br/>");
+}, false);
+
+$(function() {
+	$("#closebutton").on("click", function() {
+		console.log("Forcing SSE Connection close");  
+		source.close();
+	});
+});
+
+</script>
+</head>
+<body>
+<input id="closebutton" type="button" value="Close"/>
+
+SSE datagrams:
+<div id="sse-msgs"></div>
+</body>
+</html>

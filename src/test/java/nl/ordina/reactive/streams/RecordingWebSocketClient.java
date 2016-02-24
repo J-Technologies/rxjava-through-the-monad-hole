@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package rx.reactivestreams.example.ratpack;
+package nl.ordina.reactive.streams;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Fast and loose websocket client for testing purposes.
- * TODO use or drop
  */
+// see https://github.com/ReactiveX/RxJavaReactiveStreams, examples folder
 public class RecordingWebSocketClient extends WebSocketClient {
 
     final BlockingQueue<String> received = new LinkedBlockingQueue<>();
